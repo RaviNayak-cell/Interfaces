@@ -1,5 +1,5 @@
 
-public class ShortWordFilter implements InterfaceFilter{
+public class ShortWordFilter implements Filter{
     @Override
     public boolean accept(Object x) {
         String p = (String) x;

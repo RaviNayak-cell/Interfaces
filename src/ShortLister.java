@@ -1,68 +1,60 @@
-import javax.swing.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.nio.file.Path;
-
-import static java.nio.file.StandardOpenOption.CREATE;
+import javax.swing.JFileChooser;
 
 public class ShortLister {
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         JFileChooser chooser = new JFileChooser();
         File selectedFile;
-        String rec = "";
-        ShortWordFilter swf = new ShortWordFilter();
-        try
-        {
-            // uses a fixed known path:
-            //  Path file = Paths.get("c:\\My Documents\\data.txt");
 
-            // use the toolkit to get the current working directory of the IDE
-            // Not sure if the toolkit is thread safe...
+        try {
             File workingDirectory = new File(System.getProperty("user.dir"));
 
-            // Typiacally, we want the user to pick the file so we use a file chooser
-            // kind of ugly code to make the chooser work with NIO.
-            // Because the chooser is part of Swing it should be thread safe.
+
             chooser.setCurrentDirectory(workingDirectory);
-            // Using the chooser adds some complexity to the code.
-            // we have to code the complete program within the conditional return of
-            // the filechooser because the user can close it without picking a file
 
-            if(chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
-            {
+            chooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
+                public boolean accept(File f) {
+                    return f.isDirectory() || f.getName().toLowerCase().endsWith(".txt");
+                }
+
+                public String getDescription() {
+                    return "Text Files (*.txt)";
+                }
+            });
+
+            if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
                 selectedFile = chooser.getSelectedFile();
-                Path file = selectedFile.toPath();
-                // Typical java pattern of inherited classes
-                // we wrap a BufferedWriter around a lower level BufferedOutputStream
-                InputStream in =
-                        new BufferedInputStream(Files.newInputStream(file, CREATE));
-                BufferedReader reader =
-                        new BufferedReader(new InputStreamReader(in));
+                int wordLengthThreshold = 5;
 
-                // Finally we can read the file LOL!
+                InputStream in = Files.newInputStream(selectedFile.toPath());
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
                 int line = 0;
-                System.out.println("Words that are less than 5 letters: ");
-                while(reader.ready())
-                {
-                    rec = reader.readLine();
+                StringBuilder shortWordsRow = new StringBuilder();
+                while (reader.ready()) {
                     line++;
-                    if(swf.accept(rec))
-                    {
-                        System.out.println(rec);
+                    String[] words = reader.readLine().split("\\s+");
+                    for (String word : words) {
+                        if (word.length() <= wordLengthThreshold) {
+                            shortWordsRow.append(word).append(" ");
+                        }
                     }
                 }
-                reader.close(); // must close the file to seal it and flush buffer
-                System.out.println("\n\nData file read!");
+
+                reader.close();
+
+                System.out.println(shortWordsRow.toString());
             }
-        }
-        catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             System.out.println("File not found!!!");
             e.printStackTrace();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
